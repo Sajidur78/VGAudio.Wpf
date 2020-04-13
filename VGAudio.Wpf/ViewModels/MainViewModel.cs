@@ -1,15 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using Microsoft.Win32;
+using Ookii.Dialogs.Wpf;
 using VGAudio.Containers.Dsp;
 using VGAudio.Formats;
 using VGAudio.Containers;
@@ -53,22 +55,36 @@ namespace VGAudio.Wpf.ViewModels
         public double Samples { get; set; }
         public double SamplesPerMs => Samples / (Time * 1000);
 
+        public int BatchProgress { get; set; }
+
         public DspConfiguration DspConfiguration { get; set; } = new DspConfiguration();
         public BxstmConfiguration BxstmConfiguration { get; set; } = new BxstmConfiguration();
         public IdspConfiguration IdspConfiguration { get; set; } = new IdspConfiguration();
         public AdxConfiguration AdxConfiguration { get; set; } = new AdxConfiguration();
 
         public string InPath { get; set; }
-        private IAudioFormat InFormat { get; set; }
 
         public AudioData AudioData { get; set; }
         public bool Looping { get; set; }
         public int LoopStart { get; set; }
         public int LoopEnd { get; set; }
 
+        public ObservableCollection<string> InFiles { get; set; } = new ObservableCollection<string>();
+        public string SelectedFilePath { get; set; }
+        public AudioInfo SelectedFile { get; set; }
+
         public RelayCommand SaveFileCommand { get; }
-        public ICommand OpenFileCommand { get; }
-        private bool Saving { get; set; }
+        public RelayCommand OpenFileCommand { get; }
+
+        public RelayCommand AddFileCommand { get; }
+
+        public RelayCommand RemoveFileCommand { get; }
+
+        public RelayCommand ClearFilesCommand { get; }
+
+        public RelayCommand BatchSaveCommand { get; }
+
+        public bool Saving { get; private set; } = false;
 
         public MainViewModel()
         {
@@ -76,53 +92,72 @@ namespace VGAudio.Wpf.ViewModels
 
             SaveFileCommand = new RelayCommand(SaveFile, CanSave);
             OpenFileCommand = new RelayCommand(OpenFile);
+            AddFileCommand = new RelayCommand(AddFile);
+            RemoveFileCommand = new RelayCommand(RemoveFile, () => SelectedFilePath != null && !Saving);
+            ClearFilesCommand = new RelayCommand(() => InFiles.Clear(), () => InFiles.Count != 0 && !Saving);
+            BatchSaveCommand = new RelayCommand(BatchSaveFile, () => InFiles.Count != 0 && !Saving);
         }
 
         private bool CanSave() => AudioData != null && !Saving;
 
-        private async void OpenFile()
+        private void AddFile()
         {
-            var picker = new OpenFileDialog();
-            var builder = new StringBuilder();
-
-            builder.Append("All Files|");
-            foreach (var extension in AudioInfo.Extensions.Keys)
-            {
-                builder.Append($"*.{extension}; ");
-            }
-
-            foreach (var container in AudioInfo.Containers.Values)
-            {
-                builder.Append($"|{container.Description}|*.{container.Extensions.First()}");
-            }
-
-            picker.Filter = builder.ToString();
-
-            if (!picker.ShowDialog().Value) return;
-
             try
             {
-                InPath = picker.FileName;
+                var results = OpenFilePicker(true);
 
-                InFormat = await Task.Run(() => IO.OpenFile(picker.FileName));
-                IAudioFormat format = InFormat;
+                if (results is null)
+                    return;
 
-                LoopStart = format.LoopStart;
-                LoopEnd = format.LoopEnd;
-                Looping = format.Looping;
+                ClearFilesCommand.RaiseCanExecuteChanged();
+                RemoveFileCommand.RaiseCanExecuteChanged();
+                BatchSaveCommand.RaiseCanExecuteChanged();
 
-                AudioData = new AudioData(format);
-                State = MainState.Opened;
+                foreach (var file in results)
+                {
+                    InFiles.Add(file);
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Unable to parse file");
+                HandyControl.Controls.MessageBox.Show(ex.Message, "Unable to parse file");
+            }
+        }
+
+        public void RemoveFile()
+        {
+            InFiles.Remove(SelectedFilePath);
+        }
+
+        private void OpenFile()
+        {
+            try
+            {
+                var info = PickFile();
+                
+                if(info is null)
+                    return;
+                
+                InPath = info.FileName;
+
+                LoopStart = info.AudioFormat.LoopStart;
+                LoopEnd = info.AudioFormat.LoopEnd;
+                Looping = info.AudioFormat.Looping;
+
+                AudioData = new AudioData(info.AudioFormat);
+                State = MainState.Opened;
+                Time = 0;
+                SaveFileCommand.RaiseCanExecuteChanged();
+            }
+            catch (Exception ex)
+            {
+                HandyControl.Controls.MessageBox.Show(ex.Message, "Unable to parse file");
             }
         }
 
         private async void SaveFile()
         {
-            var savePicker = new SaveFileDialog()
+            var savePicker = new VistaSaveFileDialog()
             {
                 FileName = Path.ChangeExtension(Path.GetFileName(InPath), "." + AudioInfo.Containers[SelectedFileType].Extensions.First()),
                 Filter = $"{AudioInfo.Containers[SelectedFileType].Description}|*.{AudioInfo.Containers[SelectedFileType].Extensions.First()}"
@@ -155,12 +190,105 @@ namespace VGAudio.Wpf.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error writing file");
+                HandyControl.Controls.MessageBox.Show(ex.Message, "Error writing file");
             }
             finally
             {
                 Saving = false;
             }
+        }
+
+        private async void BatchSaveFile()
+        {
+            var dialog = new VistaFolderBrowserDialog() { ShowNewFolderButton = true};
+            
+            if(!dialog.ShowDialog().Value)
+                return;
+
+            BatchProgress = 0;
+            Saving = true;
+            var path = dialog.SelectedPath;
+            var errors = new List<string>();
+
+            try
+            {
+                await Task.Run(() =>
+                {
+                    var watch = new Stopwatch();
+                    watch.Start();
+                    Parallel.ForEach(InFiles, file =>
+                    {
+                        Saving = true;
+                        if (File.Exists(file))
+                        {
+                            try
+                            {
+                                var source = IO.OpenFile(file);
+                                using (var stream = File.Create(Path.Combine(path,
+                                    Path.ChangeExtension(Path.GetFileName(file),
+                                        $".{AudioInfo.Containers[SelectedFileType].Extensions.First()}"))))
+                                {
+                                    AudioInfo.Containers[SelectedFileType].GetWriter().WriteToStream(source, stream,
+                                        GetConfiguration(SelectedFileType));
+                                }
+
+                                source = null;
+                            }
+                            catch (Exception e)
+                            {
+                                errors.Add($"{file}: {e.Message}");
+                            }
+                        }
+
+                        GC.Collect();
+                        BatchProgress++;
+                    });
+                    watch.Stop();
+                    HandyControl.Controls.MessageBox.Show($@"Finished encoding in {watch.Elapsed.TotalSeconds}.
+Errors: {errors.Count}
+{string.Join("\r\n", errors)}", "VGAudio");
+                    Saving = false;
+                });
+            }
+            catch (Exception e)
+            {
+                HandyControl.Controls.MessageBox.Show(e.Message, "Error writing file");
+            }
+            finally
+            {
+                Saving = false;
+            }
+        }
+
+        private string[] OpenFilePicker(bool multiSelect = false)
+        {
+            var picker = new VistaOpenFileDialog() { Multiselect = multiSelect };
+            var builder = new StringBuilder();
+            builder.Append("All Files|");
+            foreach (var extension in AudioInfo.Extensions.Keys)
+            {
+                builder.Append($"*.{extension}; ");
+            }
+
+            foreach (var container in AudioInfo.Containers.Values)
+            {
+                builder.Append($"|{container.Description}|*.{container.Extensions.First()}");
+            }
+
+            picker.Filter = builder.ToString();
+
+            if (!picker.ShowDialog().Value) return null;
+
+            return picker.FileNames;
+        }
+
+        private AudioInfo PickFile()
+        {
+            var files = OpenFilePicker();
+
+            if (files is null) return null;
+
+            return new AudioInfo(files[0], IO.OpenFile(files[0]));
         }
 
         private Configuration GetConfiguration(FileType type)
@@ -215,6 +343,11 @@ namespace VGAudio.Wpf.ViewModels
         public void Execute(object parameter)
         {
             mExecute();
+        }
+
+        public void RaiseCanExecuteChanged()
+        {
+            CommandManager.InvalidateRequerySuggested();
         }
     }
 }

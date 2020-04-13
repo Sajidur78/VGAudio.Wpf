@@ -12,10 +12,11 @@ using VGAudio.Containers.Hps;
 using VGAudio.Containers.Idsp;
 using VGAudio.Containers.NintendoWare;
 using VGAudio.Containers.Wave;
+using VGAudio.Formats;
 
 namespace VGAudio.Wpf.Audio
 {
-    internal static class AudioInfo
+    public class AudioInfo
     {
         public static readonly Dictionary<FileType, ContainerType> Containers = new Dictionary<FileType, ContainerType>
         {
@@ -42,6 +43,22 @@ namespace VGAudio.Wpf.Audio
             Extensions.TryGetValue(extension, out FileType fileType);
             return fileType;
         }
+
+        public string FileName { get; set; }
+        public IAudioFormat AudioFormat;
+
+        public AudioInfo()
+        {
+
+        }
+
+        public AudioInfo(string fileName, IAudioFormat format)
+        {
+            FileName = fileName;
+            AudioFormat = format;
+        }
+
+        public AudioInfo(IAudioFormat format) : this(string.Empty, format) { }
     }
 
     public enum FileType

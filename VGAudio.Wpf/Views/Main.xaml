@@ -4,52 +4,77 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:VGAudio.Wpf.Views"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d"
              DataContext="{Binding MainWindow, Source={StaticResource Locator}}"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-        <Grid.Resources>
-            <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
-            <local:DoubleToVisibilityConverter x:Key="DoubleToVisibilityConverter" />
-            <local:BrstmToVisibilityConverter x:Key="BrstmToVisibilityConverter" />
-            <local:BcstmToVisibilityConverter x:Key="BcstmToVisibilityConverter" />
-        </Grid.Resources>
-        <StackPanel Margin="15" HorizontalAlignment="Left">
-            <Button HorizontalAlignment="Left" Content="Open File" Command="{Binding OpenFileCommand}" Margin="0,0,0,5" />
-            <StackPanel HorizontalAlignment="Left" Visibility="{Binding StateOpened, Converter={StaticResource BoolToVisibilityConverter}}">
-                <TextBlock TextWrapping="Wrap">
+        <TabControl>
+            <TabItem Header="Single">
+                <ScrollViewer>
+                    <Grid>
+                        <Grid.Resources>
+                            <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+                            <local:DoubleToVisibilityConverter x:Key="DoubleToVisibilityConverter" />
+                            <local:BrstmToVisibilityConverter x:Key="BrstmToVisibilityConverter" />
+                            <local:BcstmToVisibilityConverter x:Key="BcstmToVisibilityConverter" />
+                        </Grid.Resources>
+                        <StackPanel Margin="15" HorizontalAlignment="Left" MinWidth="300">
+                            <Button HorizontalAlignment="Left" Content="Open File" Command="{Binding OpenFileCommand}" Margin="0,0,0,5" />
+                            <StackPanel HorizontalAlignment="Left" Visibility="{Binding StateOpened, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock TextWrapping="Wrap">
                     Successfully opened file.
-                </TextBlock>
-            </StackPanel>
-            <StackPanel HorizontalAlignment="Left" Visibility="{Binding StateOpened, Converter={StaticResource BoolToVisibilityConverter}}">
-                <TextBlock Margin="0,10,0,0" TextWrapping="Wrap"
+                                </TextBlock>
+                            </StackPanel>
+                            <StackPanel HorizontalAlignment="Left" IsEnabled="{Binding StateOpened}">
+                                <TextBlock Margin="0,10,0,0" TextWrapping="Wrap"
                            Visibility="{Binding Time,Converter={StaticResource DoubleToVisibilityConverter}}">
                     Encoded in <Run Text="{Binding Time}" /> seconds.
-                </TextBlock>
-                <TextBlock TextWrapping="Wrap"
+                                </TextBlock>
+                                <TextBlock TextWrapping="Wrap"
                            Visibility="{Binding Time, Converter={StaticResource DoubleToVisibilityConverter}}">
                     Processed <Run Text="{Binding SamplesPerMs, Mode=OneWay}" /> samples per millisecond.
-                </TextBlock>
-                <ToggleButton HorizontalAlignment="Left" Margin="0,10,0,0" IsChecked="{Binding Looping, Mode=TwoWay}">
-                    <TextBlock Text="Loop File" />
-                </ToggleButton>
-                <StackPanel Orientation="Horizontal" Margin="0,10,0,0"
-                            Visibility="{Binding Looping, Converter={StaticResource BoolToVisibilityConverter}}">
-                    <TextBlock Text="Loop Start:" TextWrapping="Wrap" VerticalAlignment="Center" />
-                    <TextBox Margin="10, 0" Text="{Binding LoopStart, Mode=TwoWay}" IsEnabled="{Binding Looping}" />
-                    <TextBlock Text="Loop End:" VerticalAlignment="Center" />
-                    <TextBox Margin="10, 0" Text="{Binding LoopEnd, Mode=TwoWay}" IsEnabled="{Binding Looping}" />
-                </StackPanel>
-                <TextBlock Margin="0,20,0,0">Save File Type:</TextBlock>
-                <ComboBox Margin="0,10,0,0" ItemsSource="{Binding Path=FileTypesBinding, Mode=OneTime}"
+                                </TextBlock>
+                                <Expander Margin="-10,0,0,0" Background="Transparent" Header="Loop File" IsExpanded="{Binding Looping}">
+                                    <StackPanel Orientation="Horizontal" Margin="10,0,0,0"
+                                            Visibility="{Binding Looping, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        <TextBlock Text="Loop Start:" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                        <TextBox Margin="10, 0" Text="{Binding LoopStart, Mode=TwoWay}" IsEnabled="{Binding Looping}" />
+                                        <TextBlock Text="Loop End:" VerticalAlignment="Center" />
+                                        <TextBox Margin="10, 0" Text="{Binding LoopEnd, Mode=TwoWay}" IsEnabled="{Binding Looping}" />
+                                    </StackPanel>
+                                </Expander>
+                                <TextBlock Margin="0,10,0,0" Text="Save File Type:">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled" Value="True">
+                                                    <Setter Property="Foreground" Value="White"/>
+                                                </Trigger>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter Property="Foreground" Value="#FF737373"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <ComboBox Margin="0,10,0,0" ItemsSource="{Binding Path=FileTypesBinding, Mode=OneTime}"
                           DisplayMemberPath="Value.DisplayName" SelectedValuePath="Key"
                           SelectedValue="{Binding SelectedFileTypeBinding, Mode=TwoWay}" />
-                <Button HorizontalAlignment="Left" Margin="0,10,0,0" Content="Save File" Command="{Binding SaveFileCommand}" />
-                <local:Bcstm
+                                <Button HorizontalAlignment="Left" Margin="0,10,0,0" Content="Save File" Command="{Binding SaveFileCommand}" />
+                                <local:Bcstm
                     Visibility="{Binding SelectedFileType, Converter={StaticResource BcstmToVisibilityConverter}}" />
-                <local:Brstm
+                                <local:Brstm
                     Visibility="{Binding SelectedFileType, Converter={StaticResource BrstmToVisibilityConverter}}" />
-            </StackPanel>
-        </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Batch">
+                <local:BatchConvert/>
+            </TabItem>
+        </TabControl>
     </Grid>
 </UserControl>

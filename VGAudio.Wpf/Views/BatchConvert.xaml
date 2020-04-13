@@ -1,0 +1,43 @@
+﻿<UserControl x:Class="VGAudio.Wpf.Views.BatchConvert"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:VGAudio.Wpf.Views"
+             mc:Ignorable="d"
+             DataContext="{Binding MainWindow, Source={StaticResource Locator}}"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid Margin="10,10,10,0">
+        <Grid.Resources>
+            <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        </Grid.Resources>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <GroupBox Header="Files" HorizontalContentAlignment="Left">
+            <ListBox ItemsSource="{Binding InFiles}" SelectedItem="{Binding SelectedFilePath}" ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+        </GroupBox>
+        <Grid Grid.Row="1" Margin="0,5,0,0">
+            <StackPanel>
+                <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
+                    <Button Content="Add" Margin="0,0,10,0" Width="70" Command="{Binding AddFileCommand}"/>
+                    <Button Content="Remove" Margin="0,0,10,0" Width="70" Command="{Binding RemoveFileCommand}"/>
+                    <Button Content="Clear" Width="70" Command="{Binding ClearFilesCommand}"/>
+                </StackPanel>
+
+                <StackPanel Margin="0,10">
+                    <TextBlock>Save File Type:</TextBlock>
+                    <ComboBox Margin="0,10,0,0" ItemsSource="{Binding Path=FileTypesBinding, Mode=OneTime}"
+                              DisplayMemberPath="Value.DisplayName" SelectedValuePath="Key"
+                              SelectedValue="{Binding SelectedFileTypeBinding, Mode=TwoWay}" />
+                    <Button Content="Save" Margin="0,10,0,0" HorizontalAlignment="Left" Command="{Binding BatchSaveCommand}"/>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Row="2" Visibility="{Binding Saving, Converter={StaticResource BoolToVisibilityConverter}}">
+            <ProgressBar Margin="-15,0" Maximum="{Binding InFiles.Count}" Value="{Binding BatchProgress}"/>
+        </Grid>
+    </Grid>
+</UserControl>
