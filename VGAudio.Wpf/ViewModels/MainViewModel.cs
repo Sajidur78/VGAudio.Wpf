@@ -63,6 +63,11 @@ namespace VGAudio.Wpf.ViewModels
         public AdxConfiguration AdxConfiguration { get; set; } = new AdxConfiguration();
 
         public string InPath { get; set; }
+        public double InSize { get; set; }
+
+        public double InSampleRate { get; set; }
+
+        public TimeSpan InDuration { get; set; }
 
         public AudioData AudioData { get; set; }
         public bool Looping { get; set; }
@@ -134,12 +139,15 @@ namespace VGAudio.Wpf.ViewModels
             try
             {
                 var info = PickFile();
-                
+
                 if(info is null)
                     return;
-                
-                InPath = info.FileName;
 
+                InSize = ((double)new FileInfo(info.FileName).Length) / (1024 * 1024);
+                InSampleRate = (double)info.AudioFormat.SampleRate / 10000;
+                InDuration = TimeSpan.FromSeconds((double)info.AudioFormat.SampleCount / info.AudioFormat.SampleRate);
+
+                InPath = Path.GetFileName(info.FileName);
                 LoopStart = info.AudioFormat.LoopStart;
                 LoopEnd = info.AudioFormat.LoopEnd;
                 Looping = info.AudioFormat.Looping;
@@ -223,10 +231,21 @@ namespace VGAudio.Wpf.ViewModels
                         {
                             try
                             {
+                                string GetFileName(string filePath)
+                                {
+                                    var newName = Path.ChangeExtension(Path.GetFileName(filePath),
+                                        $".{AudioInfo.Containers[SelectedFileType].Extensions.First()}");
+                                    var newPath = Path.Combine(path, newName);
+
+                                    if (File.Exists(newPath))
+                                        newPath = Path.Combine(path,
+                                            $"{Path.GetFileNameWithoutExtension(filePath)}_{InFiles.IndexOf(filePath)}.{AudioInfo.Containers[SelectedFileType].Extensions.First()}");
+
+                                    return newPath;
+                                }
+
                                 var source = IO.OpenFile(file);
-                                using (var stream = File.Create(Path.Combine(path,
-                                    Path.ChangeExtension(Path.GetFileName(file),
-                                        $".{AudioInfo.Containers[SelectedFileType].Extensions.First()}"))))
+                                using (var stream = File.Create(GetFileName(file)))
                                 {
                                     AudioInfo.Containers[SelectedFileType].GetWriter().WriteToStream(source, stream,
                                         GetConfiguration(SelectedFileType));

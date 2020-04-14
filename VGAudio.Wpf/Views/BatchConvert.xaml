@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:VGAudio.Wpf.Views"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d"
              DataContext="{Binding MainWindow, Source={StaticResource Locator}}"
              d:DesignHeight="450" d:DesignWidth="800">
@@ -19,22 +20,27 @@
         <GroupBox Header="Files" HorizontalContentAlignment="Left">
             <ListBox ItemsSource="{Binding InFiles}" SelectedItem="{Binding SelectedFilePath}" ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
         </GroupBox>
-        <Grid Grid.Row="1" Margin="0,5,0,0">
-            <StackPanel>
-                <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
+        <Grid Grid.Row="1" Margin="0,5,0,5">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" HorizontalAlignment="Left" Orientation="Horizontal">
                     <Button Content="Add" Margin="0,0,10,0" Width="70" Command="{Binding AddFileCommand}"/>
                     <Button Content="Remove" Margin="0,0,10,0" Width="70" Command="{Binding RemoveFileCommand}"/>
                     <Button Content="Clear" Width="70" Command="{Binding ClearFilesCommand}"/>
                 </StackPanel>
 
-                <StackPanel Margin="0,10">
-                    <TextBlock>Save File Type:</TextBlock>
-                    <ComboBox Margin="0,10,0,0" ItemsSource="{Binding Path=FileTypesBinding, Mode=OneTime}"
+                <DockPanel Grid.Row="1" Margin="0,10,0,0">
+                    <TextBlock Text="Save File Type:" VerticalAlignment="Center"/>
+                    <ComboBox Margin="10,0,0,0" ItemsSource="{Binding Path=FileTypesBinding, Mode=OneTime}"
                               DisplayMemberPath="Value.DisplayName" SelectedValuePath="Key"
                               SelectedValue="{Binding SelectedFileTypeBinding, Mode=TwoWay}" />
-                    <Button Content="Save" Margin="0,10,0,0" HorizontalAlignment="Left" Command="{Binding BatchSaveCommand}"/>
-                </StackPanel>
-            </StackPanel>
+                </DockPanel>
+                <Button Grid.Row="2" Width="70" Margin="0,10,0,5" Content="Save" HorizontalAlignment="Left" Command="{Binding BatchSaveCommand}"/>
+            </Grid>
         </Grid>
         <Grid Grid.Row="2" Visibility="{Binding Saving, Converter={StaticResource BoolToVisibilityConverter}}">
             <ProgressBar Margin="-15,0" Maximum="{Binding InFiles.Count}" Value="{Binding BatchProgress}"/>

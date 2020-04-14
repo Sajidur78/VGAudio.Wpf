@@ -8,36 +8,36 @@
              d:DesignHeight="450" d:DesignWidth="800"
              DataContext="{Binding MainWindow, Source={StaticResource Locator}}">
     <Grid>
-        <Grid.Resources>
-            <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
-        </Grid.Resources>
-        <StackPanel HorizontalAlignment="Left">
-            <ToggleButton HorizontalAlignment="Left" x:Name="AdvancedBcstm" Margin="0,10,0,0">
-                <TextBlock Text="Show Advanced Options" />
-            </ToggleButton>
-            <StackPanel
-                HorizontalAlignment="Left" local:MarginSetter.Margin="0,10,0,0"
-                Visibility="{Binding IsChecked, ElementName=AdvancedBcstm, Converter={StaticResource BoolToVisibilityConverter}}">
-                <CheckBox Content="Recalculate seek table"
+        <Grid HorizontalAlignment="Stretch">
+            <Expander Margin="-10,10,0,0" Background="Transparent" Header="Show Advanced Options">
+                <StackPanel Margin="10,0,0,0"
+                HorizontalAlignment="Left" local:MarginSetter.Margin="0,10,0,0">
+                    <CheckBox Content="Recalculate seek table"
                           HorizontalAlignment="Left"
                           IsChecked="{Binding BxstmConfiguration.RecalculateSeekTable}" />
-                <CheckBox Content="Recalculate loop context"
+                    <CheckBox Content="Recalculate loop context"
                           HorizontalAlignment="Left"
                           IsChecked="{Binding BxstmConfiguration.RecalculateLoopContext}" />
-                <TextBlock Text="Track description type:" TextWrapping="Wrap" VerticalAlignment="Center" />
-                <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
-                    <TextBlock Text="Loop point alignment:" TextWrapping="Wrap" VerticalAlignment="Center" />
-                    <TextBox Margin="10, 0" Text="{Binding BxstmConfiguration.LoopPointAlignment, Mode=TwoWay}" />
+                    <Grid Margin="0,10,0,0" ColumnSpan="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="5"/>
+                            <ColumnDefinition MinWidth="60"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Loop point alignment:" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding BxstmConfiguration.LoopPointAlignment, Mode=TwoWay}" Grid.Row="0" Grid.Column="2"/>
+                        <TextBlock Text="Samples per seek table entry:" VerticalAlignment="Center" Grid.Row="1" Grid.Column="0"/>
+                        <TextBox Text="{Binding BxstmConfiguration.SamplesPerSeekTableEntry, Mode=TwoWay}" Grid.Row="1" Grid.Column="2" Margin="0,5"/>
+                        <TextBlock Text="Samples per interleaved block:" VerticalAlignment="Center" Grid.Row="2" Grid.Column="0"/>
+                        <TextBox Text="{Binding BxstmConfiguration.SamplesPerInterleave, Mode=TwoWay}" Grid.Row="2" Grid.Column="2"/>
+                    </Grid>
                 </StackPanel>
-                <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
-                    <TextBlock Text="Samples per interleaved block:" TextWrapping="Wrap" VerticalAlignment="Center" />
-                    <TextBox Margin="10, 0" Text="{Binding BxstmConfiguration.SamplesPerInterleave, Mode=TwoWay}" />
-                </StackPanel>
-                <StackPanel Margin="0,5,0,0" Orientation="Horizontal">
-                    <TextBlock Text="Samples per seek table entry:" TextWrapping="Wrap" VerticalAlignment="Center" />
-                    <TextBox Margin="10, 0" Text="{Binding BxstmConfiguration.SamplesPerSeekTableEntry, Mode=TwoWay}" />
-                </StackPanel>
-            </StackPanel>
-        </StackPanel>
+            </Expander>
+        </Grid>
     </Grid>
 </UserControl>
