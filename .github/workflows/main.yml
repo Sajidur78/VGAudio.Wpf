@@ -29,7 +29,7 @@ jobs:
         uses: microsoft/setup-msbuild@v1.0.2
         
       - name: Setup Nuget
-        uses: NuGet/setup-nuget@v1.0.2
+        uses: NuGet/setup-nuget@v1
         
       - name: Restore Nuget Packages
         run: nuget restore VGAudio.Wpf.sln
